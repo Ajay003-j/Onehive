@@ -48,7 +48,7 @@ RUN if [ -f composer.json ]; then composer install --no-dev --optimize-autoloade
 # Configure Nginx
 # ===============================
 RUN rm /etc/nginx/sites-enabled/default
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY app/nginx.conf /etc/nginx/conf.d/default.conf
 
 # ===============================
 # Set permissions

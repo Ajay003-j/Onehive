@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Nginx config
 # ===============================
 RUN rm -f /etc/nginx/sites-enabled/default
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY app/nginx.conf /etc/nginx/conf.d/default.conf
 
 # ===============================
 # Expose port
