@@ -162,6 +162,7 @@ jobs:
         --set APP_IMAGE="docker.io/username/jksuwenz:php-latest" \
         --set APP_DOMAIN="example.com" \
         --wait
+        --timeout 5m0s
 
     # -----------------------------
     # 1️⃣2️⃣ Get ingress URL
