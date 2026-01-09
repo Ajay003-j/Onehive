@@ -145,12 +145,18 @@ jobs:
         kubectl cluster-info
         kubectl get nodes
 
+    - name: Ensure namespace exists
+      run: |
+        if ! kubectl get namespace paas-${{ inputs.client_name }} >/dev/null 2>&1; then
+          kubectl create namespace paas-${{ inputs.client_name }}
+        fi
+    
     # -----------------------------
     # 1️⃣1️⃣ Deploy using Helm
     # -----------------------------
     - name: Deploy to Kubernetes
       run: |
-        helm upgrade --install "$CLIENT_NAME" ./helm/paas-chart \
+        helm upgrade --install ${{ inputs.client_name }} ./helm/paas-chart -n paas-${{ inputs.client_name }}
           --namespace "paas-$CLIENT_NAME" \
           --create-namespace \
           --set app.name="$CLIENT_NAME" \
