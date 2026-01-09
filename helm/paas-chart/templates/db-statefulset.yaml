@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Values.APP_NAME }}-db
-  namespace: {{ .Values.NAMESPACE }}
+  name: {{ .Release.APP_NAME }}-db
+  namespace: {{ .Release.NAMESPACE }}
 spec:
-  serviceName: "{{ .Values.APP_NAME }}-db"
+  serviceName: "{{ .Release.APP_NAME }}-db"
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Values.APP_NAME }}-db
+      app: {{ .Release.APP_NAME }}-db
   template:
     metadata:
       labels:
-        app: {{ .Values.APP_NAME }}-db
+        app: {{ .Release.APP_NAME }}-db
     spec:
       securityContext:
         runAsNonRoot: true
@@ -24,7 +24,7 @@ spec:
         - containerPort: 5432
         envFrom:
         - secretRef:
-            name: {{ .Values.APP_NAME }}-db-secret
+            name: {{ .Release.APP_NAME }}-db-secret
         readinessProbe:
           exec:
             command: ["pg_isready", "-U", "$(POSTGRES_USER)"]

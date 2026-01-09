@@ -1,6 +1,4 @@
 APP_NAME: app
-NAMESPACE: paas-app
-
 APP_IMAGE: myrepo/app:latest
 APP_DOMAIN: example.com
 

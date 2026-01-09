@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.APP_NAME }}-db
-  namespace: {{ .Values.NAMESPACE }}
+  name: {{ .Release.APP_NAME }}-db
+  namespace: {{ .Release.NAMESPACE }}
 spec:
   clusterIP: None
   selector:
-    app: {{ .Values.APP_NAME }}-db
+    app: { .Release.APP_NAME }}-db
   ports:
   - port: 5432

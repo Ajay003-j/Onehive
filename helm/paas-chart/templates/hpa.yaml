@@ -1,13 +1,13 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ .Values.APP_NAME }}-hpa
-  namespace: {{ .Values.NAMESPACE }}
+  name: {{ .Release.APP_NAME }}-hpa
+  namespace: {{ .Release.NAMESPACE }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ .Values.APP_NAME }}-deployment
+    name: {{ .Release.APP_NAME }}-deployment
   minReplicas: 2
   maxReplicas: 10
   metrics:
