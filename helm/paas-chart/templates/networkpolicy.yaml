@@ -1,24 +1,28 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Release.APP_NAME }}-network-policy
-  namespace: {{ .Release.NAMESPACE }}
+  name: {{ .Release.Name }}-network-policy
 spec:
   podSelector:
     matchLabels:
-      app: {{ .Release.APP_NAME }}
-  policyTypes: ["Ingress", "Egress"]
+      app: {{ .Release.Name }}
+
+  policyTypes:
+    - Ingress
+    - Egress
+
   ingress:
   - from:
     - namespaceSelector: {}
     ports:
     - port: 8080
       protocol: TCP
+
   egress:
   - to:
     - podSelector:
         matchLabels:
-          app: {{ .Release.APP_NAME }}-db
+          app: {{ .Release.Name }}-db
     ports:
     - port: 5432
       protocol: TCP

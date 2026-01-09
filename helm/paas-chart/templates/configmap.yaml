@@ -1,10 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: app-config
-  namespace: {{ .Release.NAMESPACE }}
+  name: {{ .Release.Name }}-config
 data:
   APP_ENV: "production"
-  DB_HOST: "{{ .Values.APP_NAME }}-db"
+  DB_HOST: "{{ .Release.Name }}-db"
   DB_PORT: "5432"
   UPLOAD_PATH: "/uploads"

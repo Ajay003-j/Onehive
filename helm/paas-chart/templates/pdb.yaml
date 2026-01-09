@@ -1,10 +1,9 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ .Release.APP_NAME }}-pdb
-  namespace: {{ .Release.NAMESPACE }}
+  name: {{ .Release.Name }}-pdb
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: {{ .Release.APP_NAME }}
+      app: {{ .Release.Name }}

@@ -1,31 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{.Release.APP_NAME }}-deployment
-  namespace: {{.Release.NAMESPACE }}
+  name: {{ .Release.Name }}-deployment
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: {{.Release.APP_NAME }}
+      app: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: {{.Release.APP_NAME }}
+        app: {{ .Release.Name }}
     spec:
       securityContext:
         runAsNonRoot: true
         fsGroup: 2000
+
       containers:
       - name: web
-        image: {{.Values.APP_IMAGE }}
+        image: {{ .Values.APP_IMAGE }}
         ports:
         - containerPort: 8080
+
         envFrom:
         - configMapRef:
             name: app-config
         - secretRef:
-            name: {{.Release.APP_NAME }}-db-secret
+            name: {{ .Release.Name }}-db-secret
 
         securityContext:
           allowPrivilegeEscalation: false
@@ -64,4 +65,4 @@ spec:
       volumes:
       - name: upload-storage
         persistentVolumeClaim:
-          claimName: {{.Release.APP_NAME }}-upload-pvc
+          claimName: {{ .Release.Name }}-upload-pvc

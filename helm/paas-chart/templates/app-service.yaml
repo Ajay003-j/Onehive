@@ -1,11 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.APP_NAME }}-service
-  namespace: {{ .Release.NAMESPACE }}
+  name: {{ .Release.Name }}-service
 spec:
   selector:
-    app: {{ .Release.APP_NAME }}
+    app: {{ .Release.Name }}
   ports:
   - port: 80
     targetPort: 8080

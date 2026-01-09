@@ -1,4 +1,10 @@
 apiVersion: v2
 name: paas
+description: Multi-tenant PaaS Helm chart for deploying client applications
 type: application
+
+# Chart version (changes when chart logic changes)
 version: 1.0.0
+
+# Application version (image / app version)
+appVersion: "1.0.0"

@@ -1,43 +1,51 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Release.APP_NAME }}-db
-  namespace: {{ .Release.NAMESPACE }}
+  name: {{ .Release.Name }}-db
 spec:
-  serviceName: "{{ .Release.APP_NAME }}-db"
+  serviceName: "{{ .Release.Name }}-db"
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Release.APP_NAME }}-db
+      app: {{ .Release.Name }}-db
   template:
     metadata:
       labels:
-        app: {{ .Release.APP_NAME }}-db
+        app: {{ .Release.Name }}-db
     spec:
       securityContext:
         runAsNonRoot: true
         fsGroup: 999
+
       containers:
       - name: postgres
         image: postgres:15
         ports:
-        - containerPort: 5432
+          - containerPort: 5432
+
         envFrom:
-        - secretRef:
-            name: {{ .Release.APP_NAME }}-db-secret
+          - secretRef:
+              name: {{ .Release.Name }}-db-secret
+
         readinessProbe:
           exec:
-            command: ["pg_isready", "-U", "$(POSTGRES_USER)"]
+            command:
+              - pg_isready
+              - -U
+              - $(POSTGRES_USER)
           initialDelaySeconds: 10
           periodSeconds: 10
+
         volumeMounts:
-        - name: db-storage
-          mountPath: /var/lib/postgresql/data
+          - name: db-storage
+            mountPath: /var/lib/postgresql/data
+
   volumeClaimTemplates:
-  - metadata:
-      name: db-storage
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      resources:
-        requests:
-          storage: 10Gi
+    - metadata:
+        name: db-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi

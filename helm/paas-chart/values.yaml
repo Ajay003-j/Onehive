@@ -1,7 +1,28 @@
-APP_NAME: app
+# Application
 APP_IMAGE: myrepo/app:latest
 APP_DOMAIN: example.com
 
+# Database
 DB_USER: postgres
 DB_PASSWORD: postgres
 DB_NAME: appdb
+DB_ENABLED: true
+
+# Upload PVC
+UPLOAD_ENABLED: true
+UPLOAD_STORAGE_SIZE: 5Gi
+UPLOAD_ACCESS_MODE: ReadWriteMany
+STORAGE_CLASS_NAME: "" # optional, set if using dynamic storage class
+
+# Horizontal Pod Autoscaler
+HPA_ENABLED: true
+HPA_MIN_REPLICAS: 2
+HPA_MAX_REPLICAS: 10
+HPA_CPU_TARGET: 70
+
+# PodDisruptionBudget
+PDB_ENABLED: true
+PDB_MIN_AVAILABLE: 1
+
+# NetworkPolicy
+NETWORK_POLICY_ENABLED: true
