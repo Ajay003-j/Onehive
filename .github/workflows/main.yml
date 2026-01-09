@@ -156,8 +156,8 @@ jobs:
     # -----------------------------
     - name: Deploy to Kubernetes
       run: |
-        helm upgrade --install ${{ inputs.client_name }} ./helm/paas-chart -n paas-${{ inputs.client_name }}
-          --namespace "paas-$CLIENT_NAME" \
+        helm upgrade --install $CLIENT_NAME ./helm/paas-chart \
+          -n paas-$CLIENT_NAME \
           --create-namespace \
           --set app.name="$CLIENT_NAME" \
           --set app.domain="$APP_DOMAIN" \
