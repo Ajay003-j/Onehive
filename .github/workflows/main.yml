@@ -156,12 +156,12 @@ jobs:
     # -----------------------------
     - name: Deploy to Kubernetes
       run: |
-        helm upgrade --install "$CLIENT_NAME" ./helm/paas-chart \
-        -n "paas-$CLIENT_NAME" \
+        helm upgrade --install jksuwenz ./helm/paas-chart \
+        -n paas-jksuwenz \
         --create-namespace \
-        --set APP_IMAGE="$DOCKER_REGISTRY/$CLIENT_NAME:$FRAMEWORK-latest" \
-        --set APP_DOMAIN="$APP_DOMAIN" \
-        --set DB_ENABLED="$DATABASE_REQUIRED"
+        --set APP_IMAGE="docker.io/username/jksuwenz:php-latest" \
+        --set APP_DOMAIN="example.com" \
+        --wait
 
     # -----------------------------
     # 1️⃣2️⃣ Get ingress URL
