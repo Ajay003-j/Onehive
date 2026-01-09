@@ -1,4 +1,4 @@
 apiVersion: v2
-name: paas-{{ .Values.client_name }}
+name: paas-{{ .Release.client_name }}
 type: application
 version: 1.0.0
