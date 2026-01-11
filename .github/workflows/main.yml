@@ -8,15 +8,10 @@ on:
         required: true
 
       framework:
-        description: "Framework (php | node | python | go | java)"
+        description: "Framework"
         required: true
         type: choice
-        options:
-          - php
-          - node
-          - python
-          - go
-          - java
+        options: [php, node, python, go, java]
 
       app_domain:
         description: "Client Domain"
@@ -31,19 +26,17 @@ on:
         required: false
         default: "main"
 
-      database_required:
-        description: "Database required?"
-        required: true
-        type: boolean
-        default: false
-
       client_github_token:
-        description: "Client GitHub Personal Access Token (for private repo, optional)"
+        description: "Client GitHub PAT (optional)"
         required: false
 
 jobs:
   deploy:
     runs-on: self-hosted
+
+    env:
+      ACTIONS_STEP_DEBUG: true
+      ACTIONS_RUNNER_DEBUG: true
 
     steps:
     # -----------------------------
@@ -57,9 +50,10 @@ jobs:
     # -----------------------------
     - name: Set environment variables
       run: |
+        set -euxo pipefail
+
         echo "CLIENT_NAME=${{ github.event.inputs.client_name }}" >> $GITHUB_ENV
-        # normalize framework to lowercase
-        echo "FRAMEWORK=$(echo "${{ github.event.inputs.framework }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        echo "FRAMEWORK=${{ github.event.inputs.framework }}" >> $GITHUB_ENV
         echo "APP_DOMAIN=${{ github.event.inputs.app_domain }}" >> $GITHUB_ENV
         echo "REPO_URL=${{ github.event.inputs.repo_url }}" >> $GITHUB_ENV
         echo "REPO_BRANCH=${{ github.event.inputs.repo_branch }}" >> $GITHUB_ENV
@@ -68,7 +62,7 @@ jobs:
         echo "DOCKER_REGISTRY=docker.io/${{ secrets.DOCKER_USERNAME }}" >> $GITHUB_ENV
 
     # -----------------------------
-    # 3️⃣ Mask client GitHub token
+    # 3️⃣ Mask GitHub token
     # -----------------------------
     - name: Mask GitHub token
       if: ${{ github.event.inputs.client_github_token }}
@@ -79,27 +73,29 @@ jobs:
     # -----------------------------
     - name: Clone client repository
       run: |
+        set -euxo pipefail
         rm -rf app
+
         if [ -n "$CLIENT_GITHUB_TOKEN" ]; then
-          git clone --depth 1 -b $REPO_BRANCH https://$CLIENT_GITHUB_TOKEN@github.com/$REPO_URL app
+          git clone -b "$REPO_BRANCH" https://$CLIENT_GITHUB_TOKEN@github.com/$REPO_URL app
         else
-          git clone --depth 1 -b $REPO_BRANCH https://github.com/$REPO_URL app
+          git clone -b "$REPO_BRANCH" https://github.com/$REPO_URL app
         fi
+
+        ls -la app
 
     # -----------------------------
     # 5️⃣ Validate app structure
     # -----------------------------
     - name: Validate application
       run: |
-        if [ ! -d "app" ]; then
-          echo "❌ App directory missing"
-          exit 1
-        fi
+        set -euxo pipefail
+        test -d app || (echo "❌ App directory missing" && exit 1)
 
     # -----------------------------
     # 6️⃣ Docker login
     # -----------------------------
-    - name: Log in to Docker registry
+    - name: Docker login
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
@@ -110,65 +106,81 @@ jobs:
     # -----------------------------
     - name: Build & push Docker image
       run: |
-        DOCKERFILE="docker/$FRAMEWORK/dockerfile"
-        if [ ! -f "$DOCKERFILE" ]; then
-          echo "❌ Dockerfile for framework '$FRAMEWORK' not found!"
-          exit 1
-        fi
+        set -euxo pipefail
 
+        DOCKERFILE="docker/$FRAMEWORK/Dockerfile"
         IMAGE="$DOCKER_REGISTRY/$CLIENT_NAME:$FRAMEWORK-latest"
-        echo "Building Docker image: $IMAGE using $DOCKERFILE"
 
-        docker build -f "$DOCKERFILE" -t "$IMAGE" ./app
+        test -f "$DOCKERFILE" || (echo "❌ Dockerfile missing" && exit 1)
+
+        docker build -f "$DOCKERFILE" -t "$IMAGE" app
         docker push "$IMAGE"
-
-        echo "✅ Docker image pushed: $IMAGE"
 
     # -----------------------------
     # 8️⃣ Setup kubectl
     # -----------------------------
-    - name: Set up kubectl
+    - name: Setup kubectl
       uses: azure/setup-kubectl@v3
-      with:
-        version: 'latest'
 
     # -----------------------------
     # 9️⃣ Setup Helm
     # -----------------------------
-    - name: Set up Helm
+    - name: Setup Helm
       uses: azure/setup-helm@v4
-      with:
-        version: 'latest'
 
-    - name: Verify cluster connection
+    # -----------------------------
+    # 🔍 Verify cluster
+    # -----------------------------
+    - name: Verify cluster
       run: |
+        set -eux
         kubectl cluster-info
         kubectl get nodes
 
+    # -----------------------------
+    # 🔍 Namespace
+    # -----------------------------
     - name: Ensure namespace exists
       run: |
-        if ! kubectl get namespace paas-$CLIENT_NAME >/dev/null 2>&1; then
-        kubectl create namespace paas-$CLIENT_NAME
-        fi
+        set -eux
+        kubectl create namespace paas-$CLIENT_NAME --dry-run=client -o yaml | kubectl apply -f -
 
     # -----------------------------
-    # 1️⃣1️⃣ Deploy using Helm
+    # 🔍 Helm Deploy (WITH LOGS)
     # -----------------------------
-    - name: Deploy to Kubernetes
+    - name: Deploy using Helm
       run: |
-        helm upgrade --install jksuwenz ./helm/paas-chart \
-        -n paas-jksuwenz \
-        --create-namespace \
-        --set APP_IMAGE="docker.io/username/jksuwenz:php-latest" \
-        --set APP_DOMAIN="example.com" \
-        --wait
-        --timeout 5m0s
+        set -euxo pipefail
+
+        helm upgrade --install "$CLIENT_NAME" ./helm/paas-chart \
+          --namespace "paas-$CLIENT_NAME" \
+          --set APP_NAME="$CLIENT_NAME" \
+          --set APP_IMAGE="$DOCKER_REGISTRY/$CLIENT_NAME:$FRAMEWORK-latest" \
+          --set APP_DOMAIN="$APP_DOMAIN" \
+          --wait \
+          --timeout 5m \
+          --debug
 
     # -----------------------------
-    # 1️⃣2️⃣ Get ingress URL
+    # 🔥 If deployment fails → logs
+    # -----------------------------
+    - name: Kubernetes debug info (on failure)
+      if: failure()
+      run: |
+        echo "==== PODS ===="
+        kubectl get pods -n paas-$CLIENT_NAME
+
+        echo "==== DESCRIBE PODS ===="
+        kubectl describe pods -n paas-$CLIENT_NAME
+
+        echo "==== LOGS ===="
+        for pod in $(kubectl get pods -n paas-$CLIENT_NAME -o name); do
+          kubectl logs -n paas-$CLIENT_NAME $pod || true
+        done
+
+    # -----------------------------
+    # 🌐 Ingress URL
     # -----------------------------
     - name: Get ingress URL
       run: |
-        echo "Ingress URL:"
-        kubectl get ingress -n "paas-$CLIENT_NAME" "$CLIENT_NAME" \
-          -o jsonpath='{.spec.rules[0].host}' | sed 's/^/http:\/\//'
+        kubectl get ingress -n paas-$CLIENT_NAME
