@@ -1,0 +1,38 @@
+{{- if .Values.DB_SCHEMA_ENABLED }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-db-migrate
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: postgres:15
+          envFrom:
+            - secretRef:
+                name: {{ .Release.Name }}-db-secret
+          volumeMounts:
+            - name: schema
+              mountPath: /schema
+          command:
+            - sh
+            - -c
+            - |
+              echo "Running user DB schema..."
+              psql "host={{ .Release.Name }}-db \
+                    port=5432 \
+                    dbname=$POSTGRES_DB \
+                    user=$POSTGRES_USER \
+                    password=$POSTGRES_PASSWORD" \
+                   -f /schema/schema.sql
+      volumes:
+        - name: schema
+          configMap:
+            name: {{ .Release.Name }}-db-schema
+{{- end }}

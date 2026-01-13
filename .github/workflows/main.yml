@@ -59,6 +59,13 @@ jobs:
         echo "REPO_BRANCH=${{ github.event.inputs.repo_branch }}" >> $GITHUB_ENV
         echo "CLIENT_GITHUB_TOKEN=${{ github.event.inputs.client_github_token }}" >> $GITHUB_ENV
         echo "DOCKER_REGISTRY=docker.io/${{ secrets.DOCKER_USERNAME }}" >> $GITHUB_ENV
+        # Use client_name as DB user and DB name
+        DB_USER="$CLIENT_NAME"
+        DB_NAME="$CLIENT_NAME"
+        DB_PASSWORD="postgres"   # you can keep the same or generate random
+        echo "DB_USER=$DB_USER" >> $GITHUB_ENV
+        echo "DB_NAME=$DB_NAME" >> $GITHUB_ENV
+        echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
 
     # -----------------------------
     # 3️⃣ Mask GitHub token
@@ -92,7 +99,33 @@ jobs:
         test -d app || (echo "❌ App directory missing" && exit 1)
 
     # -----------------------------
-    # 6️⃣ Docker login
+    # 🔍 Detect DB schema.sql
+    # -----------------------------
+    - name: Detect DB schema
+      run: |
+        set -euxo pipefail
+
+        if [ -f app/db/schema.sql ]; then
+          echo "DB_SCHEMA_PRESENT=true" >> $GITHUB_ENV
+          echo "✅ schema.sql found"
+        else
+          echo "DB_SCHEMA_PRESENT=false" >> $GITHUB_ENV
+          echo "ℹ️ No schema.sql provided"
+        fi
+
+    # -----------------------------
+    # 6️⃣ Inject DB schema into Helm chart
+    # -----------------------------
+    - name: Inject DB schema
+      if: env.DB_SCHEMA_PRESENT == 'true'
+      run: |
+        set -euxo pipefail
+        mkdir -p helm/paas-chart/app/db
+        cp app/db/schema.sql helm/paas-chart/app/db/schema.sql
+        echo "✅ schema.sql injected into Helm chart"
+
+    # -----------------------------
+    # 7️⃣ Docker login
     # -----------------------------
     - name: Docker login
       uses: docker/login-action@v3
@@ -101,7 +134,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     # -----------------------------
-    # 7️⃣ Build & Push Docker image
+    # 8️⃣ Build & Push Docker image
     # -----------------------------
     - name: Build & push Docker image
       run: |
@@ -116,13 +149,13 @@ jobs:
         docker push "$IMAGE"
 
     # -----------------------------
-    # 8️⃣ Setup kubectl
+    # 9️⃣ Setup kubectl
     # -----------------------------
     - name: Setup kubectl
       uses: azure/setup-kubectl@v3
 
     # -----------------------------
-    # 9️⃣ Setup Helm
+    # 🔟 Setup Helm
     # -----------------------------
     - name: Setup Helm
       uses: azure/setup-helm@v4
@@ -145,7 +178,7 @@ jobs:
         kubectl create namespace paas-$CLIENT_NAME --dry-run=client -o yaml | kubectl apply -f -
 
     # -----------------------------
-    # 🔍 Helm Deploy (WITH LOGS)
+    # 🚀 Helm Deploy
     # -----------------------------
     - name: Deploy using Helm
       run: |
@@ -156,12 +189,15 @@ jobs:
           --set APP_NAME="$CLIENT_NAME" \
           --set APP_IMAGE="$DOCKER_REGISTRY/$CLIENT_NAME:$FRAMEWORK-latest" \
           --set APP_DOMAIN="$APP_DOMAIN" \
+          --set DB_SCHEMA_ENABLED="$DB_SCHEMA_PRESENT" \
+          --set DB_USER="$DB_USER" \
+          --set DB_NAME="$DB_NAME" \
           --wait \
           --timeout 5m \
           --debug
 
     # -----------------------------
-    # 🔥 If deployment fails → logs
+    # 🔥 Debug on failure
     # -----------------------------
     - name: Kubernetes debug info (on failure)
       if: failure()
