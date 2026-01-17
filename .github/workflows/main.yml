@@ -114,8 +114,8 @@ jobs:
     # 6️⃣ Inject DB schema into Helm chart
     # -----------------------------
     - name: Inject DB schema
-      run: |
-        if: env.DB_SCHEMA_PRESENT == 'true'
+      if: env.DB_SCHEMA_PRESENT == 'true'
+      run : |
         set -euo pipefail
         mkdir -p helm/paas-chart/app/db
         cp app/db/schema.sql helm/paas-chart/app/db/schema.sql
