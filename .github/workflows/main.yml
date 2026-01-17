@@ -50,7 +50,7 @@ jobs:
     # -----------------------------
     - name: Set environment variables
       run: |
-        set -euxo pipefail
+        set -euo pipefail
 
         echo "CLIENT_NAME=${{ github.event.inputs.client_name }}" >> $GITHUB_ENV
         echo "FRAMEWORK=${{ github.event.inputs.framework }}" >> $GITHUB_ENV
@@ -76,7 +76,7 @@ jobs:
     # -----------------------------
     - name: Clone client repository
       run: |
-        set -euxo pipefail
+        set -euo pipefail
         rm -rf app
 
         if [ -n "$CLIENT_GITHUB_TOKEN" ]; then
@@ -100,9 +100,9 @@ jobs:
     # -----------------------------
     - name: Detect DB schema
       run: |
-        set -euxo pipefail
+        set -euo pipefail
 
-        if [ -f app/db/schema.sql ]; then
+        if [ -f app/schema.sql ]; then
           echo "DB_SCHEMA_PRESENT=true" >> $GITHUB_ENV
           echo "✅ schema.sql found"
         else
@@ -114,12 +114,12 @@ jobs:
     # 6️⃣ Inject DB schema into Helm chart
     # -----------------------------
     - name: Inject DB schema
-      if: env.DB_SCHEMA_PRESENT == 'true'
-      run: |
-        set -euxo pipefail
-        mkdir -p helm/paas-chart/app/db
-        cp app/db/schema.sql helm/paas-chart/app/db/schema.sql
-        echo "✅ schema.sql injected into Helm chart"
+     if: steps.detect_schema.outputs.found == 'true'
+     run: |
+      set -euo pipefail
+      mkdir -p helm/paas-chart/app/db
+      cp app/schema.sql helm/paas-chart/app/db/schema.sql
+      echo "✅ schema.sql injected into Helm chart"
 
     # -----------------------------
     # 7️⃣ Docker login
@@ -135,7 +135,7 @@ jobs:
     # -----------------------------
     - name: Build & push Docker image
       run: |
-        set -euxo pipefail
+        set -euo pipefail
 
         DOCKERFILE="docker/$FRAMEWORK/dockerfile"
         IMAGE="$DOCKER_REGISTRY/$CLIENT_NAME:$FRAMEWORK-latest"
@@ -179,7 +179,7 @@ jobs:
     # -----------------------------
     - name: Deploy using Helm
       run: |
-        set -euxo pipefail
+        set -euo pipefail
 
         helm upgrade --install "$CLIENT_NAME" ./helm/paas-chart \
           --namespace "paas-$CLIENT_NAME" \
