@@ -59,13 +59,10 @@ jobs:
         echo "REPO_BRANCH=${{ github.event.inputs.repo_branch }}" >> $GITHUB_ENV
         echo "CLIENT_GITHUB_TOKEN=${{ github.event.inputs.client_github_token }}" >> $GITHUB_ENV
         echo "DOCKER_REGISTRY=docker.io/${{ secrets.DOCKER_USERNAME }}" >> $GITHUB_ENV
-        # Use client_name as DB user and DB name
-        DB_USER="$CLIENT_NAME"
-        DB_NAME="$CLIENT_NAME"
-        DB_PASSWORD="postgres"   # you can keep the same or generate random
-        echo "DB_USER=$DB_USER" >> $GITHUB_ENV
-        echo "DB_NAME=$DB_NAME" >> $GITHUB_ENV
-        echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
+
+        echo "DB_USER=${{ github.event.inputs.client_name }}" >> $GITHUB_ENV
+        echo "DB_NAME=${{ github.event.inputs.client_name }}" >> $GITHUB_ENV
+        echo "DB_PASSWORD=postgres" >> $GITHUB_ENV
 
     # -----------------------------
     # 3️⃣ Mask GitHub token
