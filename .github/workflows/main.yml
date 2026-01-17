@@ -114,12 +114,12 @@ jobs:
     # 6️⃣ Inject DB schema into Helm chart
     # -----------------------------
     - name: Inject DB schema
-     if: steps.detect_schema.outputs.found == 'true'
-     run: |
-      set -euo pipefail
-      mkdir -p helm/paas-chart/app/db
-      cp app/schema.sql helm/paas-chart/app/db/schema.sql
-      echo "✅ schema.sql injected into Helm chart"
+      run: |
+        if: env.DB_SCHEMA_PRESENT == 'true'
+        set -euo pipefail
+        mkdir -p helm/paas-chart/app/db
+        cp app/db/schema.sql helm/paas-chart/app/db/schema.sql
+        echo "✅ schema.sql injected into Helm chart"
 
     # -----------------------------
     # 7️⃣ Docker login
